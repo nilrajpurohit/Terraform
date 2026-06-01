@@ -1,0 +1,65 @@
+1. Workspaces
+    - Terraform Workspaces allow you to maintain multiple state files using the same Terraform configuration. Each workspace has its own separate state, enabling you to manage different deployments without duplicating code.
+
+2. Purpose and Problem It Solves
+    - By default, Terraform uses a workspace named default and stores all resource state there. If you want to deploy the same configuration for different purposes (for example, staging and production), using a single state file would cause conflicts.
+    - Workspaces solve this by creating separate state files for each workspace while reusing the same configuration.
+
+3. When and Why It Should Be Used
+    - Use workspaces when you need lightweight isolation between deployments that share the same infrastructure code.
+    - Why:
+        Keeps state files separate.
+        Allows reuse of the same Terraform configuration.
+        Useful for quick testing, staging, or temporary environments.
+    - Important: Workspaces are not recommended for managing completely separate environments with different requirements. For stronger isolation, use separate directories or root modules.
+
+4. Common Workspace Commands
+    - List Existing Workspaces
+        terraform workspace list
+        - Shows all available workspaces and marks the current one with *.
+    - Create a New Workspace
+        terraform workspace new staging
+        - Creates a workspace named staging and switches to it.
+    - Switch to a Workspace
+        terraform workspace select prod
+        - Changes the current workspace to prod.
+    - Show Current Workspace
+        terraform workspace show
+        - Displays the currently selected workspace.
+
+5. AWS Example
+    locals {
+        env = terraform.workspace
+    }
+    resource "aws_instance" "web" {
+        instance_type = local.env == "prod" ? "t3.medium" : "t3.micro"
+    }
+    - Explanation of Every Block and Argument
+        locals Block
+        - Defines local values that can be reused within the configuration.
+        env = terraform.workspace
+            terraform.workspace is a built-in Terraform value.
+            Returns the name of the currently selected workspace.
+            Examples:
+                default
+                staging
+                prod
+            The value is stored in local.env.
+        
+        resource "aws_instance" "web" Block
+            - Creates an AWS EC2 instance.
+                aws_instance → Resource type.
+                web → Local resource name used within Terraform.
+
+        instance_type
+            - Determines the EC2 instance size.
+            local.env == "prod" ? "t3.medium" : "t3.micro"
+            - This is a conditional expression:
+                If the current workspace is prod, use t3.medium.
+                Otherwise, use t3.micro.
+
+        Examples:
+            Workspace	Instance Type
+            default	    t3.micro
+            staging	    t3.micro
+            prod	    t3.medium

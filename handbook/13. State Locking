@@ -1,0 +1,68 @@
+1. State Locking
+    - State locking is a Terraform mechanism that prevents multiple users or processes from modifying the same Terraform state file at the same time. It ensures that only one terraform apply operation can update the state at a given moment, protecting the state from corruption.
+
+2. Purpose and Problem It Solves
+    - Terraform state is the source of truth for your infrastructure. If two people run terraform apply simultaneously:
+        Both read the same state.
+        Both try to make changes.
+        Both attempt to write updates back to the state.
+    - This can lead to:
+        Lost updates
+        Inconsistent infrastructure
+        Corrupted state files
+    - State locking prevents this by allowing only one operation to hold a lock on the state.
+    - Example flow:
+        Developer A                  Developer B
+        terraform apply              terraform apply
+            │                            │
+            ▼                            ▼
+        Acquire Lock ──────────────► Lock already held
+            │                     Wait / Error
+            ▼
+        Apply changes
+            │
+            ▼
+        Release Lock
+
+3. When and Why It Should Be Used
+    - Use state locking whenever Terraform state is stored in a shared remote backend.
+    - Why:
+        Prevents concurrent modifications.
+        Protects the integrity of the state file.
+        Makes team collaboration safe.
+        Avoids infrastructure drift caused by conflicting updates.
+
+4. AWS Example (S3 Backend + DynamoDB Locking)
+    terraform {
+        backend "s3" {
+            bucket         = "terraform-state-bucket"
+            key            = "prod/terraform.tfstate"
+            region         = "us-east-1"
+            dynamodb_table = "terraform-locks"
+        }
+    }
+    - Explanation of Each Block and Argument
+        terraform Block
+            - Defines Terraform's settings, including where the state file is stored.
+        backend "s3" Block
+            - Configures an AWS S3 backend for remote state storage.
+        bucket = "terraform-state-bucket"
+            - The S3 bucket where Terraform stores the state file.
+        key = "prod/terraform.tfstate"
+            - The path/name of the state file inside the S3 bucket.
+        region = "us-east-1"
+            - AWS region where the S3 bucket and DynamoDB table are located.
+        dynamodb_table = "terraform-locks"
+            - The DynamoDB table used for state locking.
+    - When terraform apply starts:
+        Terraform creates a lock record in the DynamoDB table.
+        The lock uses LockID as the primary key.
+        Other Terraform operations detect the lock and wait or fail.
+        After the operation completes, Terraform removes the lock record.
+
+5. Locking Support by Backend
+    Backend	                    Locking Mechanism
+    AWS S3	                    DynamoDB table (LockID primary key)
+    Azure Storage	            Blob storage lease
+    Google Cloud Storage (GCS)	Object generation locking
+    Terraform Cloud	            Built-in locking

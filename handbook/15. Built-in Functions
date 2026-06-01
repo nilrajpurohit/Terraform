@@ -1,0 +1,72 @@
+1. Built-in Functions
+    - Built-in functions are predefined functions provided by Terraform that help you manipulate and transform values within your configuration. They eliminate the need for custom logic by handling common tasks such as string formatting, collection processing, file reading, and data encoding.
+
+2. Purpose and Problem It Solves
+    - Terraform configurations often need to:
+        Modify strings.
+        Process lists, maps, and sets.
+        Read external files.
+        Generate JSON or Base64-encoded values.
+    - Without built-in functions, these transformations would be difficult or impossible directly within Terraform code.
+
+3. When and Why It Should Be Used
+    - Use built-in functions whenever you need to transform input values, generate dynamic configuration values, or prepare data for resources.
+    - Why:
+        Reduces duplication.
+        Makes configurations more flexible.
+        Avoids hardcoding values.
+        Simplifies data manipulation.
+
+4. Common Function Categories
+    String Functions
+        upper("hello")                # "HELLO"
+        lower("WORLD")                # "world"
+        replace("foo bar", " ", "-")  # "foo-bar"
+        trimspace("  hello  ")        # "hello"
+        format("Hello, %s!", "World") # "Hello, World!"
+    Collection Functions
+        length(["a", "b", "c"])       # 3
+        toset(["a", "b", "a"])        # toset(["a", "b"])
+        merge({a=1}, {b=2})           # {a=1, b=2}
+        flatten([[1,2],[3]])          # [1, 2, 3]
+        keys({a=1, b=2})              # ["a", "b"]
+        lookup({a=1}, "a", 0)         # 1
+    Encoding & File Functions
+        base64encode("hello")
+        jsonencode({key = "value"})
+        file("./scripts/init.sh")
+        templatefile("./tmpl.tpl", {name = "world"})
+
+5. AWS Example
+    locals {
+        instance_name = upper("web-server")
+    }
+    resource "aws_instance" "web" {
+        tags = {
+            Name = local.instance_name
+        }
+    }
+    - Explanation of Every Block and Argument
+    locals Block
+    - Defines local values that can be reused throughout the configuration.
+    instance_name = upper("web-server")
+        upper() is a built-in string function.
+        Converts all characters to uppercase.
+        Result:
+            WEB-SERVER
+        The value is stored in local.instance_name.
+
+    resource "aws_instance" "web" Block
+        Creates an AWS EC2 instance.
+        aws_instance → Resource type.
+        web → Local resource name.
+
+    tags Argument
+        Assigns tags to the EC2 instance.
+        tags = {
+            Name = local.instance_name
+        }
+        Creates a tag:
+            Name = WEB-SERVER
+    
+    local.instance_name contains the value returned by the upper() function.

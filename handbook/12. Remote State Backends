@@ -1,0 +1,147 @@
+1. Remote State Backends
+    - A backend determines where Terraform stores its state file (terraform.tfstate).
+    - By default, Terraform stores state locally:
+        terraform.tfstate
+    - For teams and production environments, local state is not recommended because:
+        State can be lost if a machine fails.
+        Multiple users can overwrite each other's changes.
+        No centralized source of truth.
+        No state locking.
+    - Remote backends solve these problems.
+
+2. Why Use Remote State?
+    - Benefits
+    - Centralized Storage
+        - Everyone uses the same state file.
+            Developer A
+                \
+                --> Remote Backend
+                /
+            Developer B
+    - State Locking
+        - Prevents concurrent Terraform operations.
+        - Example:
+            User A → terraform apply
+                    State Locked
+
+            User B → terraform apply
+                    Error: State already locked
+        - Durability
+            State survives laptop failures.
+        - Security
+            Sensitive values can be stored in encrypted backends.
+
+3. AWS S3 Backend
+    - Most commonly used with AWS.
+    - Configuration
+        terraform {
+            backend "s3" {
+                bucket         = "my-terraform-state-bucket"
+                key            = "prod/vpc/terraform.tfstate"
+                region         = "us-east-1"
+                dynamodb_table = "terraform-state-lock"
+                encrypt        = true
+            }
+        }
+    - Components
+        Parameter	    Purpose
+        bucket	        S3 bucket storing state
+        key	            Path to state file
+        region	        AWS region
+        encrypt	        Enable server-side encryption
+        dynamodb_table	State locking
+
+4. State Locking with DynamoDB
+    - Terraform creates a lock record before modifying state.
+        Terraform Apply
+            ↓
+        Acquire Lock
+            ↓
+        Modify State
+            ↓
+        Release Lock
+    - Without locking:
+        User A --> Apply
+        User B --> Apply
+    - Result:
+        State corruption possible
+
+5. Terraform Cloud Backend
+    - Managed backend provided by HashiCorp Terraform Cloud.
+    - Configuration
+        terraform {
+            cloud {
+                organization = "my-org"
+
+                workspaces {
+                name = "prod-vpc"
+                }
+            }
+        }
+    - Features
+        Remote state storage
+        State locking
+        Remote execution
+        Policy enforcement
+        Team access control
+        Run history
+
+6. Workspace Concept
+    - A workspace usually represents an environment.
+        Organization
+        │
+        ├── dev-vpc
+        ├── stage-vpc
+        └── prod-vpc
+
+7. Azure Storage Backend
+    - Used when deploying infrastructure on Azure.
+    - Configuration
+        terraform {
+            backend "azurerm" {
+                resource_group_name  = "tf-state-rg"
+                storage_account_name = "tfstatestorage"
+                container_name       = "tfstate"
+                key                  = "prod.terraform.tfstate"
+            }
+        }
+    - Components
+        Parameter	            Purpose
+        resource_group_name	    Resource group
+        storage_account_name	Storage account
+        container_name	        Blob container
+        key	                    State file name
+
+8. Backend Initialization
+    - Whenever backend configuration changes:
+        terraform init
+    - Terraform initializes or migrates state.
+    - Example:
+        terraform init -migrate-state
+
+9. Common Backend Commands
+    - Initialize Backend
+        terraform init
+    - Reconfigure Backend
+        terraform init -reconfigure
+    - Migrate State
+        terraform init -migrate-state
+
+
+10. Best Practices
+    - Enable Encryption
+    - S3:
+        encrypt = true
+        Enable Locking
+    - AWS:
+        dynamodb_table = "terraform-state-lock"
+    - Separate State Per Environment
+        dev/terraform.tfstate
+        stage/terraform.tfstate
+        prod/terraform.tfstate
+    - Restrict Access
+        Use least-privilege IAM/RBAC permissions.
+    - Never Commit State Files
+        Add to .gitignore:
+        *.tfstate
+        *.tfstate.backup

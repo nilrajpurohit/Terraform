@@ -1,0 +1,78 @@
+1. Terraform Modules
+    - A module is a container for multiple Terraform resources that are used together. Modules help organize code, improve reusability, and reduce duplication.
+    - Every Terraform configuration is technically a module:
+        Root Module → The Terraform configuration in your current working directory.
+        Child Module → A module called by another module using a module block.
+
+2. Typical Module Structure
+    modules/
+    └── vpc/
+        ├── main.tf
+        ├── variables.tf
+        ├── outputs.tf
+        └── README.md
+    File	        Purpose
+    main.tf	        Resources and module logic
+    variables.tf	Input variables
+    outputs.tf	    Values exposed to callers
+    README.md	    Documentation
+
+3. Creating a Module
+    modules/vpc/variables.tf
+        variable "vpc_cidr" {
+            type = string
+        }
+        variable "name" {
+            type = string
+        }
+    modules/vpc/main.tf
+        resource "aws_vpc" "this" {
+            cidr_block = var.vpc_cidr
+            tags = {
+                Name = var.name
+            }
+        }
+    modules/vpc/outputs.tf
+        output "vpc_id" {
+            value = aws_vpc.this.id
+        }
+    
+    - Calling a Module
+        module "vpc" {
+            source = "./modules/vpc"
+            vpc_cidr = "10.0.0.0/16"
+            name     = "my-vpc"
+        }
+    - Access module outputs:
+        output "vpc_id" {
+            value = module.vpc.vpc_id
+        }
+
+4. Module Sources
+    - Terraform can load modules from different locations.
+    Source Type	Example
+    Local Path	        ./modules/vpc
+    Terraform Registry	terraform-aws-modules/vpc/aws
+    GitHub	            github.com/org/repo//modules/vpc
+    Git (SSH)	        git::ssh://git@github.com/org/repo.git
+    Git (HTTPS)	        git::https://github.com/org/repo.git
+    S3 Archive	        s3::https://bucket.s3.amazonaws.com/modules/vpc.zip
+
+5. Using Registry Modules
+    - Example:
+        module "vpc" {
+            source  = "terraform-aws-modules/vpc/aws"
+            version = "5.0.0"
+            name = "my-vpc"
+            cidr = "10.0.0.0/16"
+            azs             = ["us-east-1a", "us-east-1b"]
+            private_subnets = ["10.0.1.0/24", "10.0.2.0/24"]
+            public_subnets  = ["10.0.101.0/24", "10.0.102.0/24"]
+        }
+
+6. Benefits of Modules
+    - Code Reusability: Write once, use many times.
+    - Consistency: Standardized infrastructure across environments.
+    - Maintainability: Changes made in one place propagate everywhere.
+    - Abstraction: Consumers don't need to know implementation details.
+    - Team Collaboration: Different teams can own different modules.
