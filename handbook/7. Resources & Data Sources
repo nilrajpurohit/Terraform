@@ -1,0 +1,101 @@
+1. Resources & Data Sources
+    - Terraform configurations typically consist of resources (things Terraform creates and manages) and data sources (information Terraform reads from existing infrastructure).
+
+2. Resource Block
+    - A resource represents infrastructure that Terraform will create, update, and destroy.
+    - Example: Create an S3 Bucket
+        resource "aws_s3_bucket" "my_bucket" {
+            bucket = "my-unique-bucket-name-2024"
+            tags = {
+                Environment = "dev"
+            }
+        }
+    - Resource Block Syntax
+        resource "<PROVIDER_RESOURCE_TYPE>" "<LOCAL_NAME>" {
+            # arguments
+        }
+    - Example:
+        resource "aws_s3_bucket" "my_bucket" {
+            bucket = "my-unique-bucket-name-2024"
+        }
+        aws_s3_bucket → Resource type.
+        my_bucket → Local resource name used for references.
+        Arguments inside the block configure the resource.
+
+3. Resource References
+    - Resources can reference attributes from other resources.
+    - Example: Enable Versioning on the Bucket
+        resource "aws_s3_bucket_versioning" "versioning" {
+            bucket = aws_s3_bucket.my_bucket.id
+            versioning_configuration {
+                status = "Enabled"
+            }
+        }
+    - Reference Format
+        <RESOURCE_TYPE>.<RESOURCE_NAME>.<ATTRIBUTE>
+    - Example:
+        aws_s3_bucket.my_bucket.id
+    - Terraform automatically detects this dependency and creates the bucket before enabling versioning.
+
+4. Data Source Block
+    - A data source reads information from existing infrastructure without managing it.
+    - Terraform can use this information when creating new resources.
+    - Example: Find the Latest Ubuntu 22.04 AMI
+        data "aws_ami" "ubuntu" {
+            most_recent = true
+            owners      = ["099720109477"]
+            filter {
+                name   = "name"
+                values = ["ubuntu/images/hvm-ssd/ubuntu-*-22.04-amd64-server-*"]
+            }
+        }
+    - Data Source Syntax
+        data "<DATA_TYPE>" "<LOCAL_NAME>" {
+            # query arguments
+        }
+    - Unlike resources, data sources only read information.
+
+5. Using Data Sources
+    - The data source attributes can be referenced in resources.
+        resource "aws_instance" "web" {
+            ami           = data.aws_ami.ubuntu.id
+            instance_type = "t3.micro"
+        }
+    - Data Source Reference Format
+        data.<DATA_TYPE>.<LOCAL_NAME>.<ATTRIBUTE>
+    - Example:
+        data.aws_ami.ubuntu.id
+    - Terraform first queries AWS for the latest Ubuntu AMI and then uses the returned AMI ID when creating the EC2 instance.
+
+6. Resource vs Data Source
+    Feature	                        Resource	Data Source
+    Creates infrastructure	        ✅ Yes	    ❌ No
+    Updates infrastructure	        ✅ Yes	    ❌ No
+    Deletes infrastructure	        ✅ Yes	    ❌ No
+    Reads existing infrastructure	✅ Sometimes	✅ Yes
+    Stored in Terraform state	    ✅ Yes	    Limited metadata only
+    Managed by Terraform	        ✅ Yes	    ❌ No
+
+7. Dependency Example
+    data "aws_ami" "ubuntu" {
+        most_recent = true
+        owners      = ["099720109477"]
+    }
+
+    resource "aws_instance" "web" {
+        ami           = data.aws_ami.ubuntu.id
+        instance_type = "t3.micro"
+    }
+    - Execution order:
+        Terraform reads the AMI using the data source.
+        Terraform obtains the AMI ID.
+        Terraform creates the EC2 instance using that AMI.
+
+8. Key Takeaways
+    Resources create and manage infrastructure.
+    Data sources read existing infrastructure.
+    Resource references use:
+        aws_s3_bucket.my_bucket.id
+    Data source references use:
+        data.aws_ami.ubuntu.id
+    Terraform automatically builds a dependency graph based on these references and executes operations in the correct order.

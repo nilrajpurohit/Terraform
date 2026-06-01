@@ -1,0 +1,51 @@
+1. Core CLI Commands
+    - Terraform provides a set of core commands for initializing, planning, applying, validating, and managing infrastructure.
+    Command	                        Purpose
+    terraform init	                Initializes the working directory and downloads required providers and modules.
+    terraform plan	                Creates an execution plan showing what Terraform will add, change, or destroy.
+    terraform apply	                Applies the planned changes to create or update infrastructure.
+    terraform apply -auto-approve	Applies changes without asking for interactive confirmation.
+    terraform destroy	            Removes all infrastructure resources managed by the current configuration.
+    terraform fmt	                Formats Terraform configuration files according to standard style conventions.
+    terraform validate	            Checks configuration files for syntax and internal consistency.
+    terraform show	                Displays the current state or a saved execution plan in human-readable form.
+    terraform state list	        Lists all resources currently tracked in the Terraform state file.
+    terraform workspace show	    Displays the name of the currently selected workspace.
+
+2. Examples
+    # Initialize working directory (downloads providers)
+    terraform init
+
+    # Preview changes
+    terraform plan
+
+    # Apply changes
+    terraform apply
+
+    # Apply without interactive prompt
+    terraform apply -auto-approve
+
+    # Destroy all managed resources
+    terraform destroy
+
+    # Format code to canonical style
+    terraform fmt
+
+    # Validate configuration syntax
+    terraform validate
+
+    # Show current state
+    terraform show
+
+    # List resources in state
+    terraform state list
+
+    # Output current workspace
+    terraform workspace show
+
+3. Typical Terraform Workflow
+    terraform init
+    terraform fmt
+    terraform validate
+    terraform plan
+    terraform apply

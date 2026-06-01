@@ -1,0 +1,196 @@
+1. Meta-Arguments
+    - Meta-arguments are special arguments that can be used with most Terraform resources (and some other blocks) to control how Terraform creates, updates, and manages infrastructure.
+    - Unlike normal resource arguments (such as ami or instance_type), meta-arguments affect Terraform's behavior rather than the underlying infrastructure.
+    
+1. depends_on
+    - Creates an explicit dependency between resources.
+    - Terraform usually determines dependencies automatically through references, but sometimes dependencies must be declared manually.
+    - Example
+        resource "aws_instance" "app" {
+            ami           = data.aws_ami.ubuntu.id
+            instance_type = "t3.micro"
+            depends_on = [aws_iam_role_policy.app_policy]
+        }
+    - Why Use It?
+        - Suppose:
+            resource "aws_iam_role_policy" "app_policy" {
+                # ...
+            }
+            resource "aws_instance" "app" {
+                # ...
+            }
+        - If the EC2 instance requires the IAM policy to exist before startup, but no direct attribute reference exists, Terraform cannot infer the dependency.
+        - depends_on forces Terraform to create:
+            IAM Policy
+            EC2 Instance
+        in that order.
+        - Best Practice
+        Use depends_on only when necessary. Prefer implicit dependencies through resource references whenever possible.
+
+2. count
+    - Creates multiple identical instances of a resource.
+    - Example 
+        resource "aws_instance" "web" {
+            count         = 3
+            ami           = data.aws_ami.ubuntu.id
+            instance_type = "t3.micro"
+            tags = {
+                Name = "web-${count.index}"
+            }
+        }
+    - Terraform creates:
+        aws_instance.web[0]
+        aws_instance.web[1]
+        aws_instance.web[2]
+    - count.index
+        The index starts at 0.
+        Resource	count.index
+        web[0]	    0
+        web[1]	    1
+        web[2]	    2
+    - Generated names:
+        web-0
+        web-1
+        web-2
+    - Common Pattern
+        resource "aws_instance" "web" {
+            count = var.instance_count
+        }
+    - The number of instances becomes configurable.
+
+3. for_each
+    - Creates resources from a map or set of values.
+    - Often preferred over count because resources are identified by meaningful keys instead of numeric indexes.
+    - Example Using a Set
+        resource "aws_s3_bucket" "env_buckets" {
+            for_each = toset(["dev", "staging", "prod"])
+            bucket = "my-app-${each.key}"
+        }
+    - Terraform creates:
+        aws_s3_bucket.env_buckets["dev"]
+        aws_s3_bucket.env_buckets["staging"]
+        aws_s3_bucket.env_buckets["prod"]
+    - Example Using a Map
+        variable "instance_types" {
+            default = {
+                dev     = "t3.micro"
+                staging = "t3.small"
+                prod    = "t3.medium"
+            }
+        }
+        resource "aws_instance" "app" {
+            for_each = var.instance_types
+            ami           = data.aws_ami.ubuntu.id
+            instance_type = each.value
+            tags = {
+                Environment = each.key
+            }
+        }
+    - Values available inside the loop:
+        Expression	Meaning
+        each.key	Current map key
+        each.value	Current map value
+
+4. count vs for_each
+    Feature	                            count	for_each
+    Uses numeric indexes	            ✅ Yes	❌ No
+    Uses named keys	                    ❌ No	✅ Yes
+    Best for identical resources	    ✅ Yes	⚠️ Sometimes
+    Best for unique resources	        ❌ No	✅ Yes
+    Safer when adding/removing items	❌ No	✅ Yes
+    - Example Problem with count
+        count = 3
+    - Resources:
+        web[0]
+        web[1]
+        web[2]
+    - Removing the middle item may cause Terraform to recreate resources due to index shifting.
+    - Example with for_each
+        for_each = toset(["dev", "staging", "prod"])
+    - Resources remain stable because keys do not change.
+
+5. lifecycle
+    - Controls how Terraform handles updates and replacements.
+    - Example
+        resource "aws_instance" "web" {
+            # ...
+            lifecycle {
+                create_before_destroy = true
+                prevent_destroy       = true
+                ignore_changes        = [tags]
+            }
+        }
+
+6. create_before_destroy
+    - Default behavior:
+        Destroy old resource
+        Create new resource
+    - With:
+        create_before_destroy = true
+    - Terraform does:
+        Create new resource
+        Destroy old resource
+    - Useful for minimizing downtime.
+
+7. prevent_destroy
+    - prevent_destroy = true
+    - Prevents accidental deletion.
+    - Example:
+        terraform destroy
+    - Result:
+        Error: Instance cannot be destroyed
+    - Useful for:
+        Production databases
+        Critical storage buckets
+        Important networking resources
+
+8. ignore_changes
+    - ignore_changes = [tags]
+    - Terraform ignores changes to specified attributes.
+    - Example:
+        tags = {
+            Environment = "prod"
+        }
+    - If someone manually modifies tags in AWS:
+        Environment = prod
+        Owner       = platform-team
+    - Terraform will not attempt to remove the additional tag.
+    - Common uses:
+        Tags managed externally
+        Auto-scaled values
+        Provider-managed attributes
+
+9. Combining Meta-Arguments
+    resource "aws_instance" "web" {
+        count         = 3
+        ami           = data.aws_ami.ubuntu.id
+        instance_type = "t3.micro"
+        depends_on = [
+            aws_security_group.web
+        ]
+        lifecycle {
+            create_before_destroy = true
+        }
+    }
+    - Terraform will:
+        Create the security group first.
+        Create three EC2 instances.
+        Replace instances with minimal downtime when required.
+
+10. Key Takeaways
+    - depends_on
+        depends_on = [aws_iam_role_policy.app_policy]
+        - Creates explicit dependencies.
+    - count
+        count = 3
+        - Creates multiple copies of a resource.
+    - for_each
+        for_each = toset(["dev", "staging", "prod"])
+        - Creates resources using named keys.
+    - lifecycle
+        lifecycle {
+            create_before_destroy = true
+            prevent_destroy       = true
+            ignore_changes        = [tags]
+        }
+        - Controls replacement, deletion protection, and attribute management.

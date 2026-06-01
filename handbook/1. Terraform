@@ -1,0 +1,50 @@
+1. What is Terraform:
+    - Terraform is an Infrastructure as Code (IaC) tool developed by HashiCorp that lets you define, provision, and manage infrastructure using configuration files instead of manually creating resources through web consoles.
+    - With Terraform, you describe your desired infrastructure in code, and Terraform creates and maintains it.
+
+2. What Terraform Can Manage:
+    - Terraform can provision resources across many platforms, including:
+        Amazon Web Services (AWS)
+        Microsoft Azure
+        Google Cloud Platform (GCP)
+        Kubernetes
+        Databases
+        Networking components (VPCs, subnets, load balancers)
+        DNS records
+        Monitoring and security tools
+    - Example
+        - Instead of manually creating a cloud server, you write:
+            resource "aws_instance" "web" {
+                ami           = "ami-12345678"
+                instance_type = "t2.micro"
+            }
+        Then run:
+            terraform init
+            terraform plan
+            terraform apply
+        - Terraform creates the server automatically.
+
+3. Key Concepts:
+    Concept	        Description
+    Provider	    Plugin that connects Terraform to a platform (AWS, Azure, GCP, etc.)
+    Resource	    An infrastructure component such as a VM, database, or network
+    State	        Terraform's record of what infrastructure currently exists
+    Plan	        Preview of changes Terraform will make
+    Apply	        Executes the planned changes
+    Module	        Reusable collection of Terraform configurations
+
+4. Terraform Benefits:
+    Version-controlled infrastructure (store configs in Git)
+    Repeatable deployments
+    Reduced manual errors
+    Multi-cloud support
+    Easy collaboration among teams
+    Automated provisioning in CI/CD pipelines
+
+5. Terraform Typical Workflow:
+    Write infrastructure code.
+    Run terraform plan to preview changes.
+    Run terraform apply to create/update resources.
+    Terraform stores state and tracks resources.
+    Update code when infrastructure needs change.
+

@@ -1,0 +1,106 @@
+1. Terraform Architecture
+    - Terraform follows a simple architecture where the Terraform CLI interacts with providers, APIs, and a state file to manage infrastructure.
+        +-------------------+
+        | Terraform Config  |
+        | (.tf files)       |
+        +---------+---------+
+                |
+                v
+        +-------------------+
+        | Terraform CLI     |
+        | init/plan/apply   |
+        +---------+---------+
+                |
+                v
+        +-------------------+
+        | Provider Plugins  |
+        | AWS/Azure/GCP/K8s |
+        +---------+---------+
+                |
+                v
+        +-------------------+
+        | Cloud APIs        |
+        | Resources Created |
+        +-------------------+
+
+                ^
+                |
+        +-------------------+
+        | Terraform State   |
+        | terraform.tfstate |
+        +-------------------+
+
+2. Components:
+    - 1. Configuration Files
+        These are .tf files written in HashiCorp Configuration Language (HCL).
+        Example:
+            resource "aws_instance" "web" {
+                ami           = "ami-123456"
+                instance_type = "t2.micro"
+            }
+        They define the desired infrastructure.
+    - 2. Terraform Core
+        Terraform Core is the engine that:
+            Reads .tf files
+            Builds a dependency graph
+            Compares desired state with current state
+            Creates an execution plan
+            Coordinates provider plugins
+        Commands:
+            terraform init
+            terraform plan
+            terraform apply
+            terraform destroy
+    - 3. Providers
+        Providers act as translators between Terraform and external platforms.
+        Examples:
+            Amazon Web Services Provider
+            Microsoft Azure Provider
+            Google Cloud Platform Provider
+            Kubernetes Provider
+            GitHub Provider
+        Example:
+            provider "aws" {
+                region = "ap-south-1"
+            }
+        When Terraform needs to create an EC2 instance, it sends requests through the AWS provider, which calls AWS APIs.
+    - 4. State File
+        Terraform stores infrastructure information in a state file:
+            terraform.tfstate
+        The state file contains:
+            Resource IDs
+            Metadata
+            Resource relationships
+            Current infrastructure status
+        Terraform uses this file to determine what changes are needed.
+    - 5. Resource Graph
+        Terraform automatically builds a dependency graph.
+        Example:
+            VPC
+            |
+            Subnet
+            |
+            EC2 Instance
+        Terraform creates resources in the correct order and can execute independent resources in parallel.
+
+    - 6. Execution Plan
+        When you run:
+            terraform plan
+        Terraform compares:
+            Desired State (.tf files)
+                    VS
+            Current State (tfstate)
+        It then shows:
+            Resources to create
+            Resources to modify
+            Resources to destroy
+        Nothing is changed during plan.
+    - 7. Apply Phase
+        When you run:
+            terraform apply
+        Terraform:
+            Reads configuration
+            Reads state
+            Calls provider APIs
+            Creates/updates resources
+            Updates state file

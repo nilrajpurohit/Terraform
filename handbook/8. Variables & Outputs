@@ -1,0 +1,160 @@
+1. Variables & Outputs
+    - Terraform uses input variables to make configurations reusable and outputs to expose useful information after infrastructure is created.
+    
+2. Input Variables
+    - Variables allow you to parameterize your Terraform configuration instead of hardcoding values.
+    - Basic Variable Definition
+        variables.tf
+        variable "region" {
+            type        = string
+            description = "AWS region to deploy to"
+            default     = "us-east-1"
+        }
+    - Components
+        variable → Declares a variable.
+        region → Variable name.
+        type → Data type constraint.
+        description → Documentation.
+        default → Optional default value.
+
+3. Common Variable Types
+    String
+        variable "region" {
+            type    = string
+            default = "us-east-1"
+        }
+    Number
+        variable "instance_count" {
+            type    = number
+            default = 2
+        }
+    List
+        variable "allowed_ports" {
+            type    = list(number)
+            default = [80, 443]
+        }
+    Map
+        variable "tags" {
+            type = map(string)
+            default = {
+                Team = "platform"
+            }
+        }
+
+4. Using Variables
+    - Variables are referenced using the var object.
+    provider "aws" {
+        region = var.region
+    }
+    resource "aws_instance" "web" {
+        count         = var.instance_count
+        ami           = data.aws_ami.ubuntu.id
+        instance_type = "t3.micro"
+    }
+    resource "aws_security_group" "web" {
+        dynamic "ingress" {
+            for_each = var.allowed_ports
+
+            content {
+            from_port = ingress.value
+            to_port   = ingress.value
+            protocol  = "tcp"
+            }
+        }
+    }
+
+5. Providing Variable Values
+    - Terraform supports several ways to supply values.
+    1. .tfvars File (Recommended)
+        terraform.tfvars
+            region         = "eu-west-1"
+            instance_count = 3
+        - Terraform automatically loads terraform.tfvars.
+    2. Command-Line Variables
+            terraform apply -var="region=eu-west-1"
+        - Multiple variables:
+            terraform apply \
+                -var="region=eu-west-1" \
+                -var="instance_count=3"
+    3. Environment Variables
+        export TF_VAR_region="eu-west-1"
+        export TF_VAR_instance_count=3
+    - Terraform automatically reads variables prefixed with TF_VAR_.
+
+6. Variable Precedence
+    - When the same variable is defined in multiple places, Terraform uses the highest-priority value:
+    Priority (Highest → Lowest)	    Source
+    1	                            -var command-line arguments
+    2	                            *.auto.tfvars files
+    3	                            terraform.tfvars
+    4	                            Environment variables (TF_VAR_*)
+    5	                            Variable default values
+
+7. Output Values
+    - Outputs expose values after Terraform applies infrastructure.
+    outputs.tf
+    output "instance_ip" {
+        description = "Public IP of the web server"
+        value       = aws_instance.web.public_ip
+    }
+    - After terraform apply:
+    Outputs:
+        instance_ip = "54.123.45.67"
+
+8. Multiple Outputs
+    output "bucket_name" {
+        description = "Name of the S3 bucket"
+        value       = aws_s3_bucket.my_bucket.bucket
+        sensitive   = false
+    }
+
+9. Sensitive Outputs
+    - Use sensitive = true for secrets.
+        output "database_password" {
+            value     = aws_db_instance.db.password
+            sensitive = true
+        }
+    - Terraform hides sensitive values in CLI output:
+    database_password = <sensitive>
+
+10. Viewing Outputs
+    - Show All Outputs
+        terraform output
+    - Example:
+        instance_ip = "54.123.45.67"
+        bucket_name = "my-app-bucket"
+    - Show Specific Output
+        terraform output instance_ip
+    - JSON Format
+        terraform output -json
+    - Useful for automation and CI/CD pipelines.
+
+11. Complete Example
+    variable "region" {
+        type    = string
+        default = "us-east-1"
+    }
+    provider "aws" {
+        region = var.region
+    }
+    resource "aws_s3_bucket" "app" {
+        bucket = "my-demo-bucket"
+    }
+    output "bucket_name" {
+        value = aws_s3_bucket.app.bucket
+    }
+    - Run:
+        terraform apply
+    - Result:
+        Outputs:
+            bucket_name = "my-demo-bucket"
+
+12. Key Takeaways
+    - Variables make configurations reusable and configurable.
+    - Access variables with:
+        var.variable_name
+    - Values can come from defaults, .tfvars files, environment variables, or command-line arguments.
+    - Outputs expose useful information after deployment.
+    - Access outputs with:
+        terraform output
+    - Use sensitive = true for secrets and credentials.

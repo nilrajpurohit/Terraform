@@ -1,0 +1,22 @@
+1. Terraform Installation On Ubuntu:
+    - Install tfenv (recommended)
+    git clone https://github.com/tfutils/tfenv.git ~/.tfenv
+    echo 'export PATH="$HOME/.tfenv/bin:$PATH"' >> ~/.bashrc
+    source ~/.bashrc
+
+    - Install a specific Terraform version
+    tfenv install 1.9.0
+    tfenv use 1.9.0
+
+    - Verify installation
+    terraform version
+
+2. Recommended Project Structure
+    my-project/
+    ├── main.tf           # Primary resources
+    ├── variables.tf      # Input variable declarations
+    ├── outputs.tf        # Output value declarations
+    ├── providers.tf      # Provider configuration
+    ├── versions.tf       # Required versions block
+    ├── terraform.tfvars  # Variable values (do NOT commit secrets)
+    └── .gitignore        # Exclude .terraform/, *.tfstate
